@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, User } from "lucide-react";
-import CustomButton from "../../components/ui/CustomButton";
-import FormInput from "../../components/ui/FormInput";
+import AuthButton from "../components/ui/AuthButton";
+import FormInput from "../components/ui/FormInput";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -95,7 +95,7 @@ export default function Register() {
             <FormInput
               label="Full Name"
               type="text"
-              placeholder="John"
+              placeholder="John Doe"
               value={formData.firstName}
               onChange={handleInputChange("fullName")}
               error={errors.firstName}
@@ -168,9 +168,9 @@ export default function Register() {
             )}
 
             {/* Button */}
-            <CustomButton type="submit" loading={loading} disabled={loading}>
+            <AuthButton type="submit" loading={loading} disabled={loading}>
               {loading ? "Creating Account..." : "Create Account"}
-            </CustomButton>
+            </AuthButton>
           </form>
 
           {/* Sign In Link */}

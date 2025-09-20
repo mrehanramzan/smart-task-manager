@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
-import CustomButton from "../../components/ui/CustomButton";
-import FormInput from "../../components/ui/FormInput";
+import AuthButton from "../components/ui/AuthButton";
+import FormInput from "../components/ui/FormInput";
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -151,13 +151,13 @@ export default function Login() {
               </div>
             )}
 
-            <CustomButton
+            <AuthButton
               type="submit"
               loading={loading}
               disabled={loading}
             >
               Sign In
-            </CustomButton>
+            </AuthButton>
           </form>
 
           <div className="text-center">
