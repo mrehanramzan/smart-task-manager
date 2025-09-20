@@ -1,0 +1,32 @@
+# --- Python (FastAPI & MCP) ---
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+
+# --- Node (React frontend) ---
+node_modules/
+dist/
+build/
+.vite/
+.parcel-cache/
+
+# --- Environment & Secrets ---
+.env
+.env.*
+
+# --- Logs ---
+*.log
+
+# --- OS & IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Docker ---
+docker-data/
