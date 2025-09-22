@@ -1,33 +1,22 @@
 import { useState } from "react";
-import { User, Mail, Lock, CreditCard, Crown, Shield, Save, Eye, EyeOff, CheckCircle, AlertCircle, Clock, Calendar } from "lucide-react";
+import { User, Mail, Lock, CreditCard, Save, Check, Star, Zap } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import CustomButton from "../components/ui/CustomButton";
 import FormInput from "../components/ui/FormInput";
+import { updateProfile, updatePassword } from "../apis/account";
+import { updateSubscription } from "../apis/subscription";
+import { useAuth } from "../context/AuthContext";
 
-export default function Profile({ user }) {
-  // Mock user data
-  const mockUser = user || {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    plan: "free",
-    joinDate: "2025-01-15",
-    tasksCount: 7,
-    maxTasks: 10
-  };
-
+export default function Profile() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(false);
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  });
-
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false });
+  const userData = user.user;
   // Profile form state
   const [profileData, setProfileData] = useState({
-    name: mockUser.name,
-    email: mockUser.email
+    name: userData.fullname,
+    email: userData.email
   });
   const [profileErrors, setProfileErrors] = useState({});
 
@@ -45,130 +34,65 @@ export default function Profile({ user }) {
     { id: "plan", label: "Plan & Billing", icon: CreditCard }
   ];
 
-  // Handle profile input changes
   const handleProfileChange = (field) => (e) => {
-    setProfileData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
-    if (profileErrors[field]) {
-      setProfileErrors(prev => ({
-        ...prev,
-        [field]: ""
-      }));
-    }
+    setProfileData(prev => ({ ...prev, [field]: e.target.value }));
+    if (profileErrors[field]) setProfileErrors(prev => ({ ...prev, [field]: "" }));
   };
 
-  // Handle password input changes
   const handlePasswordChange = (field) => (e) => {
-    setPasswordData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
-    if (passwordErrors[field]) {
-      setPasswordErrors(prev => ({
-        ...prev,
-        [field]: ""
-      }));
-    }
+    setPasswordData(prev => ({ ...prev, [field]: e.target.value }));
+    if (passwordErrors[field]) setPasswordErrors(prev => ({ ...prev, [field]: "" }));
   };
 
-  // Validate profile form
-  const validateProfile = () => {
-    const errors = {};
-    
-    if (!profileData.name.trim()) {
-      errors.name = "Name is required";
-    }
-    
-    if (!profileData.email.trim()) {
-      errors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
-      errors.email = "Please enter a valid email address";
-    }
-
-    setProfileErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // Validate password form
   const validatePassword = () => {
     const errors = {};
-    
-    if (!passwordData.currentPassword) {
-      errors.currentPassword = "Current password is required";
-    }
-    
-    if (!passwordData.newPassword) {
-      errors.newPassword = "New password is required";
-    } else if (passwordData.newPassword.length < 8) {
-      errors.newPassword = "Password must be at least 8 characters";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(passwordData.newPassword)) {
-      errors.newPassword = "Password must contain uppercase, lowercase, and number";
-    }
-    
-    if (!passwordData.confirmPassword) {
-      errors.confirmPassword = "Please confirm your password";
-    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (!passwordData.currentPassword) errors.currentPassword = "Current password is required";
+    if (!passwordData.newPassword) errors.newPassword = "New password is required";
+    if (!passwordData.confirmPassword) errors.confirmPassword = "Please confirm your password";
+    else if (passwordData.newPassword !== passwordData.confirmPassword)
       errors.confirmPassword = "Passwords do not match";
-    }
-
     setPasswordErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  // Handle profile update
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    
-    if (!validateProfile()) return;
-
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log("Profile updated:", profileData);
+      const res = await updateProfile({ fullname: profileData.name, email: profileData.email });
+      if (!res.success) throw new Error(res.error);
       alert("Profile updated successfully!");
     } catch (error) {
-      setProfileErrors({ submit: "Failed to update profile. Please try again." });
+      setProfileErrors({ submit: error.message });
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle password form submission
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
-    
     if (!validatePassword()) return;
-
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log("Password changed");
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: ""
-      });
+      const res = await updatePassword({ old_password: passwordData.currentPassword, new_password: passwordData.newPassword });
+      if (!res.success) throw new Error(res.error);
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
       alert("Password changed successfully!");
     } catch (error) {
-      setPasswordErrors({ submit: "Failed to change password. Please try again." });
+      setPasswordErrors({ submit: error.message });
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle plan upgrade
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Upgrading to premium");
-      alert("Redirecting to payment...");
-      // TODO: Integrate with payment gateway
+      const res = await updateSubscription("premium");
+      console.log("Response ", res)
+      if (!res.id) throw new Error(res.error);
+      alert("Upgraded to premium plan ($9/month) successfully!");
+      window.location.reload();
     } catch (error) {
       alert("Failed to process upgrade. Please try again.");
     } finally {
@@ -176,28 +100,66 @@ export default function Profile({ user }) {
     }
   };
 
-  const togglePasswordVisibility = (field) => {
-    setShowPasswords(prev => ({
-      ...prev,
-      [field]: !prev[field]
-    }));
+  const handleCancelSubscription = async () => {
+    setLoading(true);
+    try {
+      const res = await updateSubscription("free");
+      console.log("Response ", res)
+      if (!res.id) throw new Error(res.error);
+      alert("Subscription canceled successfully! Downgraded to free plan.");
+      window.location.reload();
+    } catch (error) {
+      alert("Failed to cancel subscription. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar user={mockUser} />
-      
+      <Navbar user={user} />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Account Settings</h1>
           <p className="mt-1 text-gray-600">Manage your profile, security, and subscription</p>
-        </div>
+                        {/* Billing Information */}
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Billing Information</h3>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Current Plan:</span>
+                      <span className="ml-2 font-medium text-gray-900 capitalize">
+                        {user.subscription_tier}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Billing Cycle:</span>
+                      <span className="ml-2 font-medium text-gray-900">Monthly</span>
+                    </div>
+                    {user.subscription_tier === "premium" && (
+                      <>
+                        <div>
+                          <span className="text-gray-600">Next Payment:</span>
+                          <span className="ml-2 font-medium text-gray-900">
+                            {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Amount:</span>
+                          <span className="ml-2 font-medium text-gray-900">$9.00</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+              </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex">
-              {tabs.map((tab) => {
+              {tabs.map(tab => {
                 const Icon = tab.icon;
                 return (
                   <button
@@ -220,371 +182,273 @@ export default function Profile({ user }) {
           </div>
 
           <div className="p-6">
-            {/* Profile Tab */}
             {activeTab === "profile" && (
-              <div className="max-w-2xl">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Profile Information</h3>
-                
-                <form onSubmit={handleProfileUpdate} className="space-y-6">
-                  <FormInput
-                    label="Full Name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={profileData.name}
-                    onChange={handleProfileChange('name')}
-                    error={profileErrors.name}
-                    required
-                    icon={<User className="h-5 w-5" />}
-                  />
+              <form onSubmit={handleProfileUpdate} className="max-w-2xl space-y-6">
+                <FormInput
+                  label="Full Name"
+                  type="text"
+                  placeholder="Enter your full name"
+                  value={profileData.name}
+                  onChange={handleProfileChange('name')}
+                  error={profileErrors.name}
+                  required
+                  icon={<User className="h-5 w-5" />}
+                />
 
-                  <FormInput
-                    label="Email Address"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={profileData.email}
-                    onChange={handleProfileChange('email')}
-                    error={profileErrors.email}
-                    required
-                    icon={<Mail className="h-5 w-5" />}
-                  />
+                <FormInput
+                  label="Email Address"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={profileData.email}
+                  onChange={handleProfileChange('email')}
+                  error={profileErrors.email}
+                  required
+                  icon={<Mail className="h-5 w-5" />}
+                />
 
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center">
-                      <Shield className="h-5 w-5 text-gray-400 mr-2" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">Account Status</p>
-                        <p className="text-sm text-gray-600">
-                          Member since {new Date(mockUser.joinDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                {profileErrors.submit && <p className="text-red-600">{profileErrors.submit}</p>}
 
-                  {profileErrors.submit && (
-                    <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                        <p className="ml-3 text-sm text-red-700">{profileErrors.submit}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end">
-                    <CustomButton
-                      type="submit"
-                      loading={loading}
-                      disabled={loading}
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Changes
-                    </CustomButton>
-                  </div>
-                </form>
-              </div>
+                <div className="flex justify-end">
+                  <CustomButton type="submit" loading={loading} disabled={loading}>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </CustomButton>
+                </div>
+              </form>
             )}
 
-            {/* Password Tab */}
             {activeTab === "password" && (
-              <div className="max-w-2xl">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Change Password</h3>
-                
-                <form onSubmit={handlePasswordSubmit} className="space-y-6">
-                  <div className="relative">
-                    <FormInput
-                      label="Current Password"
-                      type={showPasswords.current ? "text" : "password"}
-                      placeholder="Enter your current password"
-                      value={passwordData.currentPassword}
-                      onChange={handlePasswordChange('currentPassword')}
-                      error={passwordErrors.currentPassword}
-                      required
-                      icon={<Lock className="h-5 w-5" />}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('current')}
-                      className="absolute right-3 top-11 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPasswords.current ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
+              <form onSubmit={handlePasswordSubmit} className="max-w-2xl space-y-6">
+                <FormInput
+                  label="Current Password"
+                  type={showPasswords.current ? "text" : "password"}
+                  placeholder="Enter current password"
+                  value={passwordData.currentPassword}
+                  onChange={handlePasswordChange('currentPassword')}
+                  error={passwordErrors.currentPassword}
+                  required
+                  icon={<Lock className="h-5 w-5" />}
+                />
+                <FormInput
+                  label="New Password"
+                  type={showPasswords.new ? "text" : "password"}
+                  placeholder="Enter new password"
+                  value={passwordData.newPassword}
+                  onChange={handlePasswordChange('newPassword')}
+                  error={passwordErrors.newPassword}
+                  required
+                  icon={<Lock className="h-5 w-5" />}
+                />
+                <FormInput
+                  label="Confirm New Password"
+                  type={showPasswords.confirm ? "text" : "password"}
+                  placeholder="Confirm new password"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange('confirmPassword')}
+                  error={passwordErrors.confirmPassword}
+                  required
+                  icon={<Lock className="h-5 w-5" />}
+                />
 
-                  <div className="relative">
-                    <FormInput
-                      label="New Password"
-                      type={showPasswords.new ? "text" : "password"}
-                      placeholder="Enter your new password"
-                      value={passwordData.newPassword}
-                      onChange={handlePasswordChange('newPassword')}
-                      error={passwordErrors.newPassword}
-                      required
-                      icon={<Lock className="h-5 w-5" />}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('new')}
-                      className="absolute right-3 top-11 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPasswords.new ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
+                {passwordErrors.submit && <p className="text-red-600">{passwordErrors.submit}</p>}
 
-                  <div className="relative">
-                    <FormInput
-                      label="Confirm New Password"
-                      type={showPasswords.confirm ? "text" : "password"}
-                      placeholder="Confirm your new password"
-                      value={passwordData.confirmPassword}
-                      onChange={handlePasswordChange('confirmPassword')}
-                      error={passwordErrors.confirmPassword}
-                      required
-                      icon={<Lock className="h-5 w-5" />}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => togglePasswordVisibility('confirm')}
-                      className="absolute right-3 top-11 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPasswords.confirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                    <h4 className="text-sm font-medium text-blue-900 mb-2">Password Requirements</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• At least 8 characters long</li>
-                      <li>• Contains uppercase and lowercase letters</li>
-                      <li>• Contains at least one number</li>
-                    </ul>
-                  </div>
-
-                  {passwordErrors.submit && (
-                    <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-                      <div className="flex items-center">
-                        <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" />
-                        <p className="ml-3 text-sm text-red-700">{passwordErrors.submit}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end">
-                    <CustomButton
-                      type="submit"
-                      loading={loading}
-                      disabled={loading}
-                    >
-                      <Lock className="h-4 w-4 mr-2" />
-                      Change Password
-                    </CustomButton>
-                  </div>
-                </form>
-              </div>
+                <div className="flex justify-end">
+                  <CustomButton type="submit" loading={loading} disabled={loading}>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Change Password
+                  </CustomButton>
+                </div>
+              </form>
             )}
 
-            {/* Plan & Billing Tab */}
             {activeTab === "plan" && (
-              <div className="max-w-3xl">
-                <h3 className="text-lg font-medium text-gray-900 mb-6">Plan & Billing</h3>
-                
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Current Plan */}
-                  <div className={`border-2 rounded-lg p-6 ${
-                    mockUser.plan === "free" ? "border-gray-200" : "border-blue-500"
-                  }`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-semibold text-gray-900">
-                        {mockUser.plan === "free" ? "Free Plan" : "Premium Plan"}
-                      </h4>
-                      {mockUser.plan === "premium" && (
-                        <div className="flex items-center text-blue-600">
-                          <Crown className="h-5 w-5 mr-1" />
-                          <span className="text-sm font-medium">Current</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                        <span className="text-sm text-gray-700">
-                          {mockUser.plan === "free" ? "Up to 10 tasks" : "Unlimited tasks"}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                        <span className="text-sm text-gray-700">Basic task management</span>
-                      </div>
-                      <div className="flex items-center">
-                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                        <span className="text-sm text-gray-700">Time tracking</span>
-                      </div>
-                      {mockUser.plan === "premium" && (
-                        <>
-                          <div className="flex items-center">
-                            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                            <span className="text-sm text-gray-700">Advanced AI insights</span>
-                          </div>
-                          <div className="flex items-center">
-                            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                            <span className="text-sm text-gray-700">Priority support</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
+              <div className="max-w-4xl space-y-8">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Plan & Billing</h2>
+                  <p className="text-gray-600">Choose the plan that works best for you</p>
+                </div>
 
-                    {mockUser.plan === "free" && (
-                      <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                        <p className="text-sm text-yellow-800">
-                          <strong>{mockUser.tasksCount}/{mockUser.maxTasks}</strong> tasks used
-                        </p>
-                        <div className="w-full bg-yellow-200 rounded-full h-2 mt-2">
-                          <div 
-                            className="bg-yellow-600 h-2 rounded-full transition-all" 
-                            style={{ width: `${(mockUser.tasksCount / mockUser.maxTasks) * 100}%` }}
-                          ></div>
-                        </div>
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Free Plan Card */}
+                  <div className={`relative rounded-2xl border-2 p-8 ${
+                    user.subscription_tier === "free" 
+                      ? "border-blue-500 bg-blue-50" 
+                      : "border-gray-200 bg-white"
+                  }`}>
+                    {user.subscription_tier === "free" && (
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                          Current Plan
+                        </span>
                       </div>
                     )}
-
-                    <div className="mt-6 text-center">
-                      <div className="text-3xl font-bold text-gray-900">
-                        {mockUser.plan === "free" ? "$0" : "$9.99"}
+                    
+                    <div className="text-center mb-6">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                        <Star className="h-8 w-8 text-gray-600" />
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {mockUser.plan === "free" ? "forever" : "per month"}
+                      <h3 className="text-2xl font-bold text-gray-900">Free</h3>
+                      <p className="text-gray-600 mt-2">Perfect to get started</p>
+                      <div className="mt-4">
+                        <span className="text-4xl font-bold text-gray-900">$0</span>
+                        <span className="text-gray-600">/month</span>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Premium Plan (if user is on free) */}
-                  {mockUser.plan === "free" && (
-                    <div className="border-2 border-blue-500 rounded-lg p-6 relative">
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                          Recommended
+                    <ul className="space-y-4 mb-8">
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Basic features</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Limited usage</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Community support</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Basic analytics</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Basic analytics</span>
+                      </li>
+                    </ul>
+
+                    {user.subscription_tier === "free" ? (
+                      <div className="text-center">
+                        <span className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-medium">
+                          <Check className="h-4 w-4 mr-2" />
+                          Active Plan
                         </span>
                       </div>
-                      
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-gray-900">Premium Plan</h4>
-                        <div className="flex items-center text-blue-600">
-                          <Crown className="h-5 w-5 mr-1" />
-                          <span className="text-sm font-medium">Upgrade</span>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="flex items-center">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                          <span className="text-sm text-gray-700">Unlimited tasks</span>
-                        </div>
-                        <div className="flex items-center">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                          <span className="text-sm text-gray-700">Advanced AI insights</span>
-                        </div>
-                        <div className="flex items-center">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                          <span className="text-sm text-gray-700">Priority support</span>
-                        </div>
-                        <div className="flex items-center">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                          <span className="text-sm text-gray-700">Export capabilities</span>
-                        </div>
-                        <div className="flex items-center">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                          <span className="text-sm text-gray-700">Team collaboration</span>
-                        </div>
-                      </div>
+                    ) : (
+                      <button 
+                        onClick={handleCancelSubscription}
+                        disabled={loading}
+                        className="w-full py-3 px-4 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        {loading ? "Processing..." : "Downgrade to Free"}
+                      </button>
+                    )}
+                  </div>
 
-                      <div className="mt-6 text-center">
-                        <div className="text-3xl font-bold text-gray-900">$9.99</div>
-                        <div className="text-sm text-gray-500">per month</div>
+                  {/* Paid Plan Card */}
+                  <div className={`relative rounded-2xl border-2 p-8 ${
+                    user.subscription_tier === "premium" 
+                      ? "border-purple-500 bg-purple-50" 
+                      : "border-gray-200 bg-white shadow-lg"
+                  }`}>
+                    {user.subscription_tier === "premium" && (
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-purple-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                          Current Plan
+                        </span>
                       </div>
-
-                      <div className="mt-6">
-                        <CustomButton
-                          onClick={handleUpgrade}
-                          loading={loading}
-                          disabled={loading}
-                          className="w-full bg-blue-600 hover:bg-blue-700"
-                        >
-                          <Crown className="h-4 w-4 mr-2" />
-                          Upgrade to Premium
-                        </CustomButton>
+                    )}
+                    
+                    {user.subscription_tier === "free" && (
+                      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                        <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                          Most Popular
+                        </span>
+                      </div>
+                    )}
+                    
+                    <div className="text-center mb-6">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full mb-4">
+                        <Zap className="h-8 w-8 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900">Pro</h3>
+                      <p className="text-gray-600 mt-2">For power users</p>
+                      <div className="mt-4">
+                        <span className="text-4xl font-bold text-gray-900">$9</span>
+                        <span className="text-gray-600">/month</span>
                       </div>
                     </div>
-                  )}
 
-                  {/* Billing Info (if premium user) */}
-                  {mockUser.plan === "premium" && (
-                    <div className="border border-gray-200 rounded-lg p-6">
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4">Billing Information</h4>
-                      
-                      <div className="space-y-4">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Next billing date</span>
-                          <span className="text-sm font-medium text-gray-900">
+                    <ul className="space-y-4 mb-8">
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">All Free features</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Unlimited usage</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Priority support</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Advanced analytics</span>
+                      </li>
+                      <li className="flex items-center">
+                        <Check className="h-5 w-5 text-green-500 mr-3" />
+                        <span className="text-gray-700">Premium features</span>
+                      </li>
+                    </ul>
+
+                    {user.subscription_tier === "premium" ? (
+                      <div className="space-y-3">
+                        <div className="text-center">
+                          <span className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-lg font-medium">
+                            <Check className="h-4 w-4 mr-2" />
+                            Active Plan
+                          </span>
+                        </div>
+                        <button 
+                          onClick={handleCancelSubscription}
+                          disabled={loading}
+                          className="w-full py-3 px-4 border border-red-300 rounded-lg font-medium text-red-700 hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          {loading ? "Processing..." : "Cancel Subscription"}
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        onClick={handleUpgrade}
+                        disabled={loading}
+                        className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:from-purple-600 hover:to-pink-600 transition-colors disabled:opacity-50"
+                      >
+                        {loading ? "Processing..." : "Upgrade to Pro"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Billing Information */}
+                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Billing Information</h3>
+                  <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-600">Current Plan:</span>
+                      <span className="ml-2 font-medium text-gray-900 capitalize">
+                        {user.subscription_tier}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Billing Cycle:</span>
+                      <span className="ml-2 font-medium text-gray-900">Monthly</span>
+                    </div>
+                    {user.subscription_tier === "premium" && (
+                      <>
+                        <div>
+                          <span className="text-gray-600">Next Payment:</span>
+                          <span className="ml-2 font-medium text-gray-900">
                             {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}
                           </span>
                         </div>
-                        
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Payment method</span>
-                          <span className="text-sm font-medium text-gray-900">•••• •••• •••• 1234</span>
-                        </div>
-                        
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Amount</span>
-                          <span className="text-sm font-medium text-gray-900">$9.99/month</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-6 space-y-3">
-                        <CustomButton variant="outline" className="w-full">
-                          Update Payment Method
-                        </CustomButton>
-                        <CustomButton variant="outline" className="w-full text-red-600 border-red-300 hover:bg-red-50">
-                          Cancel Subscription
-                        </CustomButton>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Usage Statistics */}
-                <div className="mt-8 border-t border-gray-200 pt-8">
-                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Usage Statistics</h4>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <CheckCircle className="h-8 w-8 text-green-500 mr-3" />
                         <div>
-                          <p className="text-sm font-medium text-gray-600">Tasks Completed</p>
-                          <p className="text-2xl font-bold text-gray-900">24</p>
+                          <span className="text-gray-600">Amount:</span>
+                          <span className="ml-2 font-medium text-gray-900">$9.00</span>
                         </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <Clock className="h-8 w-8 text-blue-500 mr-3" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">Hours Tracked</p>
-                          <p className="text-2xl font-bold text-gray-900">127</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center">
-                        <Calendar className="h-8 w-8 text-purple-500 mr-3" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-600">Days Active</p>
-                          <p className="text-2xl font-bold text-gray-900">45</p>
-                        </div>
-                      </div>
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

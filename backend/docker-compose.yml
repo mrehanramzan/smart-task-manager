@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:15
+    container_name: task_postgres_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${PG_USER}
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: ${PG_DB}
+    ports:
+      - "${PG_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - shared_network
+
+  backend:
+    build: .
+    container_name: task_backend_app
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "30013:30013"
+    volumes:
+      - .:/app
+    networks:
+      - shared_network
+volumes:
+  postgres_data:
+
+networks:
+  shared_network:
+    external: true

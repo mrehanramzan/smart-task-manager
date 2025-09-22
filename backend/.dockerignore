@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Environment & virtualenv
+.env
+*.env
+venv/
+.venv/
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+# Git
+.git/
+.gitignore
+
+# IDE & editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Caches & logs
+*.log
+*.pid
+*.seed
+*.out
+*.bak
+*.tmp
+.mypy_cache/
+.pytest_cache/
+.coverage

@@ -40,49 +40,13 @@ export default function EditTaskModal({ isOpen, onClose, task, onSubmit }) {
     }
   };
 
-  // Form validation
-  const validateForm = () => {
-    const newErrors = {};
-
-    // Title validation
-    if (!formData.title.trim()) {
-      newErrors.title = "Task title is required";
-    } else if (formData.title.length > 100) {
-      newErrors.title = "Title must be less than 100 characters";
-    }
-
-    // Description validation
-    if (formData.description.length > 500) {
-      newErrors.description = "Description must be less than 500 characters";
-    }
-
-    // Due date validation
-    if (formData.dueDate) {
-      const selectedDate = new Date(formData.dueDate);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (selectedDate < today) {
-        newErrors.dueDate = "Due date cannot be in the past";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
-
     setLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
       onSubmit({
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -180,22 +144,6 @@ export default function EditTaskModal({ isOpen, onClose, task, onSubmit }) {
             icon={<Calendar className="h-5 w-5" />}
             helperText="Leave empty if no due date"
           />
-
-          {/* Task Info */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Time Spent:</span>
-              <span className="font-medium">{Math.floor(task.timeSpent / 60)}h {task.timeSpent % 60}m</span>
-            </div>
-            <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-gray-600">Status:</span>
-              <span className="font-medium capitalize">{task.status.replace('-', ' ')}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm mt-2">
-              <span className="text-gray-600">Created:</span>
-              <span className="font-medium">{new Date(task.createdAt).toLocaleDateString()}</span>
-            </div>
-          </div>
 
           {/* Submit Error */}
           {errors.submit && (

@@ -14,7 +14,7 @@ import {
 import CustomButton from "../ui/CustomButton";
 import EditTaskModal from "./EditTaskModal";
 
-export default function TaskCard({ task, onUpdate, onDelete }) {
+export default function TaskCard({ task, onUpdate, onUpdateStatus , onDelete }) {
   const [showMenu, setShowMenu] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -41,7 +41,7 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
   };
 
   const handleStatusChange = (newStatus) => {
-    onUpdate(task.id, { status: newStatus });
+    onUpdateStatus(task.id,  newStatus);
     setShowMenu(false);
   };
 
@@ -50,10 +50,6 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
       onDelete(task.id);
     }
     setShowMenu(false);
-  };
-
-  const handleTimeUpdate = (timeSpent) => {
-    onUpdate(task.id, { timeSpent: task.timeSpent + timeSpent });
   };
 
   const formatTime = (minutes) => {
@@ -171,7 +167,7 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
                   
                   {task.status !== "in-progress" && (
                     <button
-                      onClick={() => handleStatusChange("in-progress")}
+                      onClick={() => handleStatusChange("in_progress")}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       <PlayCircle className="h-4 w-4 mr-2" />
@@ -224,37 +220,6 @@ export default function TaskCard({ task, onUpdate, onDelete }) {
           </div>
         </div>
 
-        {/* Quick Time Actions */}
-        <div className="mt-4 flex items-center gap-2 pt-4 border-t border-gray-100">
-          <span className="text-sm text-gray-500">Quick time:</span>
-          <CustomButton
-            variant="outline"
-            size="sm"
-            onClick={() => handleTimeUpdate(15)}
-            className="text-xs"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            15m
-          </CustomButton>
-          <CustomButton
-            variant="outline"
-            size="sm"
-            onClick={() => handleTimeUpdate(30)}
-            className="text-xs"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            30m
-          </CustomButton>
-          <CustomButton
-            variant="outline"
-            size="sm"
-            onClick={() => handleTimeUpdate(60)}
-            className="text-xs"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            1h
-          </CustomButton>
-        </div>
       </div>
 
       {/* Modals */}

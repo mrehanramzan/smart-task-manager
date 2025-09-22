@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { 
   Menu, 
   X, 
@@ -13,34 +13,27 @@ import {
   ChevronDown
 } from "lucide-react";
 import CustomButton from "../ui/CustomButton";
+import { useAuth } from "../../context/AuthContext";
 
-export default function Navbar({ user }) {
+export default function Navbar() {
+  const { user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
-
-  const mockUser = user || {
-    name: "John Doe",
-    email: "john@example.com",
-    plan: "free"
-  };
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Monthly Summary", href: "/monthly-summary", icon: BarChart3 },
+    ...(user.subscription_tier === "premium"
+      ? [{ name: "Monthly Summary", href: "/monthly-summary", icon: BarChart3 }]
+      : []),
     { name: "Profile", href: "/profile", icon: User }
   ];
 
-  const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log("Logging out...");
-    navigate("/");
-  };
+  const isActiveRoute = (path) => location.pathname === path;
 
-  const isActiveRoute = (path) => {
-    return location.pathname === path;
-  };
+  if (!user) return null; // Or show a loading state
+
+  const userData = user.user; // Adjust based on your API: user.user.email, user.user.name
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -52,7 +45,7 @@ export default function Navbar({ user }) {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
                 <LayoutDashboard className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-semibold  text-gray-500">Smart Task Manager</span>
+              <span className="text-xl font-semibold text-gray-500">Smart Task Manager</span>
             </Link>
           </div>
 
@@ -83,7 +76,7 @@ export default function Navbar({ user }) {
           <div className="hidden md:block">
             <div className="ml-4 flex items-center md:ml-6">
               {/* Plan Badge */}
-              {mockUser.plan === "premium" && (
+              {user.subscription_tier === "premium" && (
                 <div className="flex items-center mr-4 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
                   <Crown className="h-3 w-3 mr-1" />
                   Premium
@@ -99,7 +92,7 @@ export default function Navbar({ user }) {
                   <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center mr-2">
                     <User className="h-4 w-4 text-gray-600" />
                   </div>
-                  <span className="hidden lg:block text-gray-700 mr-1">{mockUser.name}</span>
+                  <span className="hidden lg:block text-gray-700 mr-1">{userData.name}</span>
                   <ChevronDown className="h-4 w-4 text-gray-400" />
                 </button>
 
@@ -107,17 +100,10 @@ export default function Navbar({ user }) {
                 {isProfileMenuOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                     <div className="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">
-                      {mockUser.email}
+                      {userData.email}
                     </div>
-                    <Link
-                      to="/profile"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileMenuOpen(false)}
-                    >
-                      <Settings className="h-4 w-4 mr-2" />
-                      Settings
-                    </Link>
-                    {mockUser.plan === "free" && (
+                    
+                    {user.subscription_tier === "free" && (
                       <Link
                         to="/profile"
                         className="flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-50"
@@ -128,7 +114,7 @@ export default function Navbar({ user }) {
                       </Link>
                     )}
                     <button
-                      onClick={handleLogout}
+                      onClick={logout}
                       className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
                     >
                       <LogOut className="h-4 w-4 mr-2" />
@@ -147,11 +133,7 @@ export default function Navbar({ user }) {
               size="sm"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
-              {isMobileMenuOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </CustomButton>
           </div>
         </div>
@@ -186,10 +168,10 @@ export default function Navbar({ user }) {
                     <User className="h-4 w-4 text-gray-600" />
                   </div>
                   <div>
-                    <div className="text-base font-medium text-gray-800">{mockUser.name}</div>
-                    <div className="text-sm text-gray-500">{mockUser.email}</div>
+                    <div className="text-base font-medium text-gray-800">{userData.name}</div>
+                    <div className="text-sm text-gray-500">{userData.email}</div>
                   </div>
-                  {mockUser.plan === "premium" && (
+                  {user.subscription_tier === "premium" && (
                     <div className="ml-auto">
                       <div className="flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
                         <Crown className="h-3 w-3 mr-1" />
@@ -200,16 +182,7 @@ export default function Navbar({ user }) {
                 </div>
                 
                 <div className="mt-3 space-y-1">
-                  <Link
-                    to="/profile"
-                    className="flex items-center px-3 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Settings className="h-5 w-5 mr-3" />
-                    Settings
-                  </Link>
-                  
-                  {mockUser.plan === "free" && (
+                  {user.subscription_tier === "free" && (
                     <Link
                       to="/profile"
                       className="flex items-center px-3 py-2 text-base font-medium text-blue-600 hover:bg-blue-50 rounded-md"
@@ -221,7 +194,7 @@ export default function Navbar({ user }) {
                   )}
                   
                   <button
-                    onClick={handleLogout}
+                    onClick={logout}
                     className="flex items-center w-full px-3 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md text-left"
                   >
                     <LogOut className="h-5 w-5 mr-3" />
@@ -235,12 +208,7 @@ export default function Navbar({ user }) {
       </div>
 
       {/* Click outside to close profile menu */}
-      {isProfileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsProfileMenuOpen(false)}
-        />
-      )}
+      {isProfileMenuOpen && <div className="fixed inset-0 z-40" onClick={() => setIsProfileMenuOpen(false)} />}
     </nav>
   );
 }

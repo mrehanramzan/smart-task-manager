@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, User } from "lucide-react";
 import AuthButton from "../components/ui/AuthButton";
 import FormInput from "../components/ui/FormInput";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Register() {
+  const navigate = useNavigate();
+  const { register } = useAuth(); // use AuthContext register
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -16,62 +19,34 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Handle input changes
   const handleInputChange = (field) => (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-
-    if (errors[field]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: "",
-      }));
-    }
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  // Validation
-  const validateForm = () => {
-    const newErrors = {};
 
-    if (!formData.fullName.trim()) {
-      newErrors.firstName = "Name is required";
-    }
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password =
-        "Password must contain at least one uppercase letter, one lowercase letter, and one number";
-    }
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
 
     setLoading(true);
+    setErrors({});
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("Register", formData);
-      alert("Registration successful!");
-    } catch (error) {
+      // Call AuthContext register
+      const res = await register({
+        email: formData.email,
+        fullname: formData.fullName,
+        password: formData.password
+      });
+
+      if (res.error) {
+        setErrors({ submit: res.error });
+      } else {
+        // Registration successful
+        alert("Registration successful! Please login.");
+        navigate("/"); // redirect to login page
+      }
+    } catch (err) {
       setErrors({ submit: "Registration failed. Please try again." });
     } finally {
       setLoading(false);
@@ -81,7 +56,6 @@ export default function Register() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
         <div className="text-center mb-6">
           <h2 className="text-4xl font-bold text-gray-900 mb-3">Create Account</h2>
           <p className="text-lg text-gray-600">
@@ -90,15 +64,14 @@ export default function Register() {
         </div>
 
         <div className="space-y-8">
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <FormInput
               label="Full Name"
               type="text"
               placeholder="John Doe"
-              value={formData.firstName}
+              value={formData.fullName}
               onChange={handleInputChange("fullName")}
-              error={errors.firstName}
+              error={errors.fullName}
               required
               icon={<User className="h-5 w-5" />}
             />
@@ -156,7 +129,6 @@ export default function Register() {
               </button>
             </div>
 
-          
             {/* Error */}
             {errors.submit && (
               <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
@@ -167,20 +139,15 @@ export default function Register() {
               </div>
             )}
 
-            {/* Button */}
             <AuthButton type="submit" loading={loading} disabled={loading}>
               {loading ? "Creating Account..." : "Create Account"}
             </AuthButton>
           </form>
 
-          {/* Sign In Link */}
           <div className="text-center">
             <p className="text-gray-600">
               Already have an account?{" "}
-              <Link
-                to="/"
-                className="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
-              >
+              <Link to="/" className="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
                 Sign in here
               </Link>
             </p>
