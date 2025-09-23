@@ -112,8 +112,3 @@ The MCP server will be available at: **http://localhost:8000**
 - Verify that the `GEMINI_API_KEY` is correctly set in the MCP server `.env` file
 - Check service logs if any container fails to start
 - If services can't communicate, verify they're all using the `shared_network`
-
----
-cd backend && docker compose up  
-cd mcp-server && docker compose up
-```
