@@ -104,25 +104,6 @@ The MCP server will be available at: **http://localhost:8000**
 
 ---
 
-## Docker Compose Configuration
-Each service should include the shared network configuration in their `docker-compose.yml` files:
-
-```yaml
-networks:
-  shared_network:
-    external: true
-
-services:
-  your-service:
-    # ... other configuration
-    networks:
-      - shared_network
-
-volumes:
-  postgres_data:
-```
-
----
 
 ## Troubleshooting
 - Make sure Docker is installed and running
