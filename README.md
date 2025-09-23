@@ -16,7 +16,7 @@ Before setting up any services, create a shared Docker network that all services
 docker network create shared_network
 ```
 
-This network allows the frontend, backend, and MCP server to communicate with each other.
+This network allows the backend, and MCP server to communicate with each other.
 
 ---
 
